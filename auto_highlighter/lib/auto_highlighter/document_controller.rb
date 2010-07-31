@@ -10,7 +10,6 @@ module Redcar
       OpenPairChars = ["{", "(", "["]
       ClosePairChars = ["}", ")", "]"]
       PairChars = OpenPairChars + ClosePairChars
-      @gc = nil
         
       #def initialize(gc)
       #  @gc = gc
