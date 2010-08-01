@@ -1,46 +1,38 @@
-require 'auto_highlighter/highlight_painter'
+require 'auto_highlighter/document_controller'
 module Redcar
   class AutoHighlighter
 
-    @paint_flag = nil
-
-    def self.paint_listener()
-      puts "Called paint!"
-      @paint_listener = PaintListener.new()
+    def self.styledText_update(styledText)        
+      if @styledText != styledText
+        puts "Style update"
+        @styledText = styledText
+        @doc.styledText = @styledText
+        @doc.gc = Swt::Graphics::GC.new(@styledText)
+      end
     end
 
-    #def self.document_controller_types
-    #  puts "Called docContr"
-    #  [AutoHighlighter::DocumentController]
+    def self.document_cursor_listener
+        @doc = DocumentController.new
+    end
+    
+    #def	self.key_listener(styledText, doc)
+	#    puts "Called key listener!"
+    #  @key_listener = KeyListener.new(styledText, doc)
     #end
-    
-    def	self.key_listener(styledText, doc, paint)
-	    puts "Called key listener!"
-      @key_listener = KeyListener.new(styledText, doc, paint)
-    end
 
-    class KeyListener
-      
-      def initialize(styledText, doc, paint)
-        @key_handler = KeyListenerHighlight.new(styledText, doc, paint)
-      end
-      
-      def key_pressed(_)
-        @key_handler.key_pressed        
-      end
-      
-      def key_released(_)
-        
-      end
-    end
-    
-    class PaintListener
+    #class PaintListener
 	
-      attr_accessor :gc
-
-      def paintControl(event)
-	      @gc = event.gc
-      end
-    end
+   #   def initialize(styledText, doc_controller)
+   #     @styledText = styledText
+   #     @doc_controller = doc_controller
+   #   end
+        
+   #   def paintControl(event)
+   #     if styledText != @event
+   #         @styledText = styledText
+   #         doc_controller.styledText = @styledText
+   #     end
+   #   end
+   # end
   end
 end

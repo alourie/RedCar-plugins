@@ -1,16 +1,15 @@
 module Redcar
   class AutoHighlighter
-    class KeyListenerHighlight 
+    class KeyListener
 
       OpenPairChars = ["{", "(", "["]
       ClosePairChars = ["}", ")", "]"]
       PairChars = OpenPairChars + ClosePairChars
         
-      def initialize(styledText, document, paint)
-	@styledText = styledText
-  	@background = @styledText.getBackground
+      def initialize(styledText, document)
+	    @styledText = styledText
+  	    @background = @styledText.getBackground
         @document = document
-	@paint = paint
       end
     
       def find_forward_pair(offset, search_char, current_char)
@@ -90,17 +89,10 @@ module Redcar
         return @newoffset
       end
 
-      def key_pressed()
+      def key_pressed(_)
 	
 	@offset = @document.cursor_offset
-	if @paint.gc
-	  #square = [0, 300, 300, 300, 300, 600, 0, 600]
-	  #@paint.gc.setAlpha(95)
-	  #@paint.gc.fill_polygon(square.to_java(:int))
-	  puts "Not disposed!" if not @paint.gc.is_disposed?
-	end
         puts "Offset is " + @offset.to_s() + ", Doc is " + @document.length.to_s()
-        #puts "GC obj is " + gc.to_s()
         if @offset == @document.length
             @char_next = false
 	    if @background != @styledText.getBackground
@@ -123,12 +115,12 @@ module Redcar
         if @char_next and PairChars.include?(@char_next)
 	  @styledText.setBackground(ApplicationSWT.display.system_color Swt::SWT::COLOR_DARK_GRAY)
           puts "Highligh " + @char_next + " on offset " + @offset.to_s() + " and its pair at " + pair_of_offset(@offset).to_s()
-	  @styledText.redrawRange(pair_of_offset(@offset), 1, false)
+	  @styledText.redraw(1, 1, 2, 2, false)
           # highligh_pair(offset, pair_of_offset(offset))
         elsif @char_prev and PairChars.include?(@char_prev)
             puts "Highligh " + @char_prev + " on offset " + @offset.to_s() + " and its pair at " + pair_of_offset(@offset-1).to_s()
           # highligh_pair(offset-1, pair_of_offset(offset-1))
-	  @styledText.redrawRange(pair_of_offset(@offset-1), 1, false)
+	  @styledText.redraw(1, 1, 2, 2, false)
         else
             #clear!
         end

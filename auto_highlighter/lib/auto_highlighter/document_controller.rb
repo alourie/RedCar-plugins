@@ -2,19 +2,17 @@ module Redcar
   class AutoHighlighter
     class DocumentController
 
-      include Redcar::Document::Controller
-      include Redcar::Document::Controller::ModificationCallbacks
+      attr_accessor :gc, :styledText, :document
+        
+      #include Redcar::Document::Controller
+      #include Redcar::Document::Controller::ModificationCallbacks
       include Redcar::Document::Controller::CursorCallbacks
  
 
       OpenPairChars = ["{", "(", "["]
       ClosePairChars = ["}", ")", "]"]
       PairChars = OpenPairChars + ClosePairChars
-        
-      #def initialize(gc)
-      #  @gc = gc
-      #end
-    
+     
       def find_forward_pair(offset, search_char, current_char)
         if offset == document.length
           return nil
@@ -93,7 +91,7 @@ module Redcar
       end
 
       def cursor_moved(offset)
-
+        
         puts "Offset is " + offset.to_s() + ", Doc is " + document.length.to_s()
         #puts "GC obj is " + gc.to_s()
         if offset == document.length
@@ -111,6 +109,18 @@ module Redcar
         
         if @char_next and PairChars.include?(@char_next)
           puts "Highligh " + @char_next + " on offset " + offset.to_s() + " and its pair at " + pair_of_offset(offset).to_s()
+          if styledText
+            @height = styledText.getLineHeight()
+            @width = styledText.getLocationAtOffset(1).x - styledText.getLocationAtOffset(0).x
+            @pos = styledText.getLocationAtOffset(offset)
+            #puts "Hight is " + @height.to_s() + ", width is " + @width.to_s() + " and position is " + @pos.to_s()
+            @background = gc.getBackground
+            gc.background = ApplicationSWT.display.system_color Swt::SWT::COLOR_GRAY
+            gc.setAlpha(98)
+            rectangle = [@pos.x, @pos.y, @pos.x+@width, @pos.y, @pos.x+@width, @pos.y+@height, @pos.x, @pos.y+@height]
+            gc.fill_polygon(rectangle.to_java(:int))
+            gc.background = @background
+        end        
           # highligh_pair(offset, pair_of_offset(offset))
         elsif @char_prev and PairChars.include?(@char_prev)
             puts "Highligh " + @char_prev + " on offset " + offset.to_s() + " and its pair at " + pair_of_offset(offset-1).to_s()
