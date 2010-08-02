@@ -3,51 +3,49 @@ module Redcar
     class DocumentController
 
       attr_accessor :gc, :styledText, :document
-      attr_accessor :height, :width  
+      attr_accessor :height, :width, :highlighted  
       
-      #include Redcar::Document::Controller
-      #include Redcar::Document::Controller::ModificationCallbacks
       include Redcar::Document::Controller::CursorCallbacks
  
-      
-     
       def initialize
-        @highlighted_current = false
-        @highlighted_pair = false
+        @i = 0
+        @highlighted_current = nil
+        @highlighted_pair = nil
         @open_pair_chars = ["{", "(", "["]
         @close_pair_chars = ["}", ")", "]"]
         @pair_chars = @open_pair_chars + @close_pair_chars
       end
 
-      def highligh_pair(current, pair)
+      def highlight_pair(current, pair)
         if document.length > 0
-          if current == @highlighted_current || current == @highlighted_pair || pair == @highlighted_current || pair == @highlighted_pair
+          if current == -1 and pair == -1
+            puts "Paint redraw"
+            current = @highlighted_current
+            pair = @highlighted_pair
+          elsif current == @highlighted_current || current == @highlighted_pair || pair == @highlighted_current || pair == @highlighted_pair
             return
+          else
+            clear
           end
           puts "Highligh on offset " + current.to_s() + " and its pair at " + pair.to_s()
-	        clear
-          
-          height = styledText.getLineHeight()
-          width = styledText.getLocationAtOffset(1).x - styledText.getLocationAtOffset(0).x
           @pos_current = styledText.getLocationAtOffset(current)
           @pos_pair = styledText.getLocationAtOffset(pair)
           gc.background = ApplicationSWT.display.system_color Swt::SWT::COLOR_GRAY
           gc.setAlpha(98)
-          rectangle1 = [@pos_current.x, @pos_current.y, @pos_current.x+width, @pos_current.y, @pos_current.x+width, @pos_current.y+height, @pos_current.x, @pos_current.y+height]
-          rectangle2 = [@pos_pair.x, @pos_pair.y, @pos_pair.x+width, @pos_pair.y, @pos_pair.x+width, @pos_pair.y+height, @pos_pair.x, @pos_pair.y+height]
-          gc.fill_polygon(rectangle1.to_java(:int))
-	  @highlighted_current = current
-          gc.fill_polygon(rectangle2.to_java(:int))          
-	  @highlighted_pair = pair
-	  @highlighted = true
+          rectangle1 = styledText.getTextBounds(current, current)
+          rectangle2 = styledText.getTextBounds(pair, pair)
+          gc.fill_rectangle(rectangle1)
+          gc.fill_rectangle(rectangle2)          
+          @highlighted_current = current
+    	  @highlighted_pair = pair
+	      @highlighted = true
         end
       end
       
       def clear
-        if @highlighted and gc
-          puts "clear"
-	        styledText.redrawRange(@highlighted_current, 1, true)
-	        styledText.redrawRange(@highlighted_pair, 1, true)
+        if @highlighted
+	      styledText.redrawRange(@highlighted_current, 1, false)
+	      styledText.redrawRange(@highlighted_pair, 1, false) # if on the same line
           @highlighted_current = nil
           @highlighted_pair = nil
           @highlighted = false
@@ -145,12 +143,11 @@ module Redcar
             @char_prev = false
         end
         
-        
         if @char_next and @pair_chars.include?(@char_next)
-          highligh_pair(offset, pair_of_offset(offset))
+          highlight_pair(offset, pair_of_offset(offset))
 	        @highlighted = true
         elsif @char_prev and @pair_chars.include?(@char_prev)
-          highligh_pair(offset-1, pair_of_offset(offset-1))
+          highlight_pair(offset-1, pair_of_offset(offset-1))
 	        @highlighted = true
         else
           clear
