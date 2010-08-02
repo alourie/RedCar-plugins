@@ -44,46 +44,15 @@ module Redcar
       
       def clear
         if @highlighted
-	      styledText.redrawRange(@highlighted_current, 1, false)
-	      styledText.redrawRange(@highlighted_pair, 1, false) # if on the same line
+	        styledText.redrawRange(@highlighted_current, 1, false) if @highlighted_current < document.length
+	        styledText.redrawRange(@highlighted_pair, 1, false) # if on the same line
           @highlighted_current = nil
           @highlighted_pair = nil
           @highlighted = false
         end
       end
       
-      def find_forward_pair(offset, search_char, current_char)
-        if offset == document.length
-          return nil
-        end
-
-        state = 1
-        quotes = false
-        doublequotes = false
-        
-        while offset < document.length
-          offset = offset + 1;
-          @newchar = document.get_range(offset, 1)
-          if @newchar == search_char and !quotes and !doublequotes
-            state = state - 1
-          elsif @newchar == current_char and !quotes and !doublequotes
-            state = state + 1
-          elsif @newchar == '"'
-            doublequotes = !doublequotes
-          elsif @newchar == "'"
-            quotes = !quotes
-          end
-          if state == 0
-            return offset
-          end
-        end
-        
-        if state != 0
-          return nil
-        end
-      end
-
-      def find_backwards_pair(offset, search_char, current_char)
+      def find_pair(step, offset, search_char, current_char)
         if offset == 0
           return nil
         end
@@ -91,10 +60,9 @@ module Redcar
         quotes = false
         doublequotes = false
         
-
         while offset > 0
-          offset = offset - 1;
-          @newchar = document.get_range(offset, 1)
+          offset = offset + step;
+          @newchar = styledText.getTextRange(offset, 1)
           if @newchar == search_char and !quotes and !doublequotes
             state = state - 1
           elsif @newchar == current_char and !quotes and !doublequotes
@@ -119,11 +87,11 @@ module Redcar
         @index = @open_pair_chars.index(@char)
 
         if @index
-          @newoffset = find_forward_pair(offset, @close_pair_chars[@index], @open_pair_chars[@index])
+          @newoffset = find_pair(1, offset, @close_pair_chars[@index], @open_pair_chars[@index])
         else
           @index = @close_pair_chars.index(@char)
           if @index
-            @newoffset = find_backwards_pair(offset, @open_pair_chars[@index], @close_pair_chars[@index])
+            @newoffset = find_pair(-1, offset, @open_pair_chars[@index], @close_pair_chars[@index])
           end
         end
         return @newoffset
@@ -131,7 +99,7 @@ module Redcar
 
       def cursor_moved(offset)
         
-        if offset == document.length
+        if offset >= document.length
             @char_next = false
         else
             @char_next = document.get_range(offset, 1)    
@@ -145,10 +113,8 @@ module Redcar
         
         if @char_next and @pair_chars.include?(@char_next)
           highlight_pair(offset, pair_of_offset(offset))
-	        @highlighted = true
         elsif @char_prev and @pair_chars.include?(@char_prev)
           highlight_pair(offset-1, pair_of_offset(offset-1))
-	        @highlighted = true
         else
           clear
         end
