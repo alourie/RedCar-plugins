@@ -3,16 +3,57 @@ module Redcar
     class DocumentController
 
       attr_accessor :gc, :styledText, :document
-        
+      attr_accessor :height, :width  
+      
       #include Redcar::Document::Controller
       #include Redcar::Document::Controller::ModificationCallbacks
       include Redcar::Document::Controller::CursorCallbacks
  
-
-      OpenPairChars = ["{", "(", "["]
-      ClosePairChars = ["}", ")", "]"]
-      PairChars = OpenPairChars + ClosePairChars
+      
      
+      def initialize
+        @highlighted_current = false
+        @highlighted_pair = false
+        @open_pair_chars = ["{", "(", "["]
+        @close_pair_chars = ["}", ")", "]"]
+        @pair_chars = @open_pair_chars + @close_pair_chars
+      end
+
+      def highligh_pair(current, pair)
+        if document.length > 0
+          if current == @highlighted_current || current == @highlighted_pair || pair == @highlighted_current || pair == @highlighted_pair
+            return
+          end
+          puts "Highligh on offset " + current.to_s() + " and its pair at " + pair.to_s()
+	        clear
+          
+          height = styledText.getLineHeight()
+          width = styledText.getLocationAtOffset(1).x - styledText.getLocationAtOffset(0).x
+          @pos_current = styledText.getLocationAtOffset(current)
+          @pos_pair = styledText.getLocationAtOffset(pair)
+          gc.background = ApplicationSWT.display.system_color Swt::SWT::COLOR_GRAY
+          gc.setAlpha(98)
+          rectangle1 = [@pos_current.x, @pos_current.y, @pos_current.x+width, @pos_current.y, @pos_current.x+width, @pos_current.y+height, @pos_current.x, @pos_current.y+height]
+          rectangle2 = [@pos_pair.x, @pos_pair.y, @pos_pair.x+width, @pos_pair.y, @pos_pair.x+width, @pos_pair.y+height, @pos_pair.x, @pos_pair.y+height]
+          gc.fill_polygon(rectangle1.to_java(:int))
+	  @highlighted_current = current
+          gc.fill_polygon(rectangle2.to_java(:int))          
+	  @highlighted_pair = pair
+	  @highlighted = true
+        end
+      end
+      
+      def clear
+        if @highlighted and gc
+          puts "clear"
+	        styledText.redrawRange(@highlighted_current, 1, true)
+	        styledText.redrawRange(@highlighted_pair, 1, true)
+          @highlighted_current = nil
+          @highlighted_pair = nil
+          @highlighted = false
+        end
+      end
+      
       def find_forward_pair(offset, search_char, current_char)
         if offset == document.length
           return nil
@@ -77,14 +118,14 @@ module Redcar
 
       def pair_of_offset(offset)
         @char = document.get_range(offset, 1)
-        @index = OpenPairChars.index(@char)
+        @index = @open_pair_chars.index(@char)
 
         if @index
-          @newoffset = find_forward_pair(offset, ClosePairChars[@index], OpenPairChars[@index])
+          @newoffset = find_forward_pair(offset, @close_pair_chars[@index], @open_pair_chars[@index])
         else
-          @index = ClosePairChars.index(@char)
+          @index = @close_pair_chars.index(@char)
           if @index
-            @newoffset = find_backwards_pair(offset, OpenPairChars[@index], ClosePairChars[@index])
+            @newoffset = find_backwards_pair(offset, @open_pair_chars[@index], @close_pair_chars[@index])
           end
         end
         return @newoffset
@@ -92,8 +133,6 @@ module Redcar
 
       def cursor_moved(offset)
         
-        puts "Offset is " + offset.to_s() + ", Doc is " + document.length.to_s()
-        #puts "GC obj is " + gc.to_s()
         if offset == document.length
             @char_next = false
         else
@@ -107,26 +146,14 @@ module Redcar
         end
         
         
-        if @char_next and PairChars.include?(@char_next)
-          puts "Highligh " + @char_next + " on offset " + offset.to_s() + " and its pair at " + pair_of_offset(offset).to_s()
-          if styledText
-            @height = styledText.getLineHeight()
-            @width = styledText.getLocationAtOffset(1).x - styledText.getLocationAtOffset(0).x
-            @pos = styledText.getLocationAtOffset(offset)
-            #puts "Hight is " + @height.to_s() + ", width is " + @width.to_s() + " and position is " + @pos.to_s()
-            @background = gc.getBackground
-            gc.background = ApplicationSWT.display.system_color Swt::SWT::COLOR_GRAY
-            gc.setAlpha(98)
-            rectangle = [@pos.x, @pos.y, @pos.x+@width, @pos.y, @pos.x+@width, @pos.y+@height, @pos.x, @pos.y+@height]
-            gc.fill_polygon(rectangle.to_java(:int))
-            gc.background = @background
-        end        
-          # highligh_pair(offset, pair_of_offset(offset))
-        elsif @char_prev and PairChars.include?(@char_prev)
-            puts "Highligh " + @char_prev + " on offset " + offset.to_s() + " and its pair at " + pair_of_offset(offset-1).to_s()
-          # highligh_pair(offset-1, pair_of_offset(offset-1))
+        if @char_next and @pair_chars.include?(@char_next)
+          highligh_pair(offset, pair_of_offset(offset))
+	        @highlighted = true
+        elsif @char_prev and @pair_chars.include?(@char_prev)
+          highligh_pair(offset-1, pair_of_offset(offset-1))
+	        @highlighted = true
         else
-            #clear!
+          clear
         end
       end
     end
