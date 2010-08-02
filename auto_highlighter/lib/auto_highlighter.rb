@@ -8,7 +8,6 @@ module Redcar
         @styledText = styledText
         @doc.styledText = @styledText
         @doc.gc = Swt::Graphics::GC.new(styledText)
-        paint = PaintListener.new(@doc)
       end
     end
 
@@ -16,22 +15,26 @@ module Redcar
         @doc = DocumentController.new
     end
     
-    class PaintListener
-        
-        def initialize(doc)
-            @doc = doc
-        end
-        
-        def paintControl(event)
-            @doc.highlight_pair(-1, -1) if @doc.highlighted
-        end
+    def	self.key_listener()
+      @key_listener = KeyListener.new()
+    end
+
+    def	self.line_listener()
+      @line_listener = LineEventListener.new()
     end
     
-    #def	self.key_listener(styledText, doc)
-	#    puts "Called key listener!"
-    #  @key_listener = KeyListener.new(styledText, doc)
-    #end
+    class KeyListener
+        def key_pressed(_)
+        end
+        def key_released(_)
+        end
+    end
 
+    class LineEventListener
+      def lineGetBackground(event)
+          @i = 0
+      end
+    end
     #class PaintListener
 	
    #   def initialize(styledText, doc_controller)
