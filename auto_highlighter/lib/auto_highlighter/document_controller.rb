@@ -17,17 +17,18 @@ module Redcar
       end
 
       def highlight_pair(current, pair)
+        
+        if current == nil or pair == nil
+          clear
+          return
+        elsif current == @highlighted_current || current == @highlighted_pair || pair == @highlighted_current || pair == @highlighted_pair
+          return
+        end
+
+        #puts "Highligh on offset " + current.to_s() + " and its pair at " + pair.to_s()
         if document.length > 0
-          if current == -1 and pair == -1
-            puts "Paint redraw"
-            current = @highlighted_current
-            pair = @highlighted_pair
-          elsif current == @highlighted_current || current == @highlighted_pair || pair == @highlighted_current || pair == @highlighted_pair
-            return
-          else
-            clear
-          end
-          puts "Highligh on offset " + current.to_s() + " and its pair at " + pair.to_s()
+          clear
+          #puts "Highligh on offset " + current.to_s() + " and its pair at " + pair.to_s()
           @pos_current = styledText.getLocationAtOffset(current)
           @pos_pair = styledText.getLocationAtOffset(pair)
           gc.background = ApplicationSWT.display.system_color Swt::SWT::COLOR_GRAY
@@ -44,8 +45,8 @@ module Redcar
       
       def clear
         if @highlighted
-	        styledText.redrawRange(@highlighted_current, 1, false) if @highlighted_current < document.length
-	        styledText.redrawRange(@highlighted_pair, 1, false) # if on the same line
+	      styledText.redrawRange(@highlighted_current, 1, false) if @highlighted_current < document.length
+	      styledText.redrawRange(@highlighted_pair, 1, false) # if on the same line
           @highlighted_current = nil
           @highlighted_pair = nil
           @highlighted = false
@@ -60,7 +61,7 @@ module Redcar
         quotes = false
         doublequotes = false
         
-        while offset > 0
+        while offset > 0 and offset < document.length
           offset = offset + step;
           @newchar = styledText.getTextRange(offset, 1)
           if @newchar == search_char and !quotes and !doublequotes
@@ -85,6 +86,7 @@ module Redcar
       def pair_of_offset(offset)
         @char = document.get_range(offset, 1)
         @index = @open_pair_chars.index(@char)
+        @newoffset = nil
 
         if @index
           @newoffset = find_pair(1, offset, @close_pair_chars[@index], @open_pair_chars[@index])
@@ -99,8 +101,10 @@ module Redcar
 
       def cursor_moved(offset)
         
+        pair = nil
+        
         if offset >= document.length
-            @char_next = false
+            @char_next = nil
         else
             @char_next = document.get_range(offset, 1)    
         end
@@ -108,16 +112,19 @@ module Redcar
         if offset > 0
             @char_prev = document.get_range(offset-1, 1) 
         else
-            @char_prev = false
+            @char_prev = nil
         end
         
         if @char_next and @pair_chars.include?(@char_next)
-          highlight_pair(offset, pair_of_offset(offset))
+            pair = pair_of_offset(offset)            
         elsif @char_prev and @pair_chars.include?(@char_prev)
-          highlight_pair(offset-1, pair_of_offset(offset-1))
+            offset = offset - 1
+            pair = pair_of_offset(offset)
         else
-          clear
+            clear
         end
+        
+        highlight_pair(offset, pair)
       end
     end
   end
